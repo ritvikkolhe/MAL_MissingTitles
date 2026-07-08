@@ -912,10 +912,10 @@ def main():
             time.sleep(REQUEST_DELAY)
 
     print()
-    print("Loading episode counts...")
+    print("Loading metadata...")
 
     episode_progress = tqdm(
-        missing.items(), desc="Episodes", unit=" anime", dynamic_ncols=True
+        missing.items(), desc="Scanning", unit=" anime", dynamic_ncols=True
     )
 
     for i, (anime_id, data) in enumerate(episode_progress, start=1):

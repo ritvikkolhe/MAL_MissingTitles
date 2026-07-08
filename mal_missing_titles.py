@@ -2,8 +2,8 @@
 MyAnimeList Missing Related Anime
 
 Scans a user's MyAnimeList anime list and identifies related
-anime entries that are not currently marked as watched while
-preserving Plan-To-Watch (PTW) entries for visibility.
+anime entries that are not already present on the user's list,
+while preserving Plan-To-Watch (PTW) entries for visibility.
 
 Features:
 - Franchise relationship discovery
@@ -862,13 +862,23 @@ def main():
 
     planned_ids = {anime["anime_id"] for anime in anime_list if anime["status"] == 6}
 
-    watched_ids = {anime["anime_id"] for anime in anime_list if anime["status"] != 6}
+    source_ids = {
+        anime["anime_id"]
+        for anime in anime_list
+        if anime["status"] in {1, 2}  # Watching + Completed
+    }
+
+    existing_ids = {
+        anime["anime_id"]
+        for anime in anime_list
+        if anime["status"] in {1, 2, 3, 4}  # Watching, Completed, On Hold, Dropped
+    }
 
     known_titles = {anime["anime_id"]: anime["anime_title"] for anime in anime_list}
 
     missing = {}
 
-    progress = tqdm(watched_ids, desc="Scanning", unit=" anime", dynamic_ncols=True)
+    progress = tqdm(source_ids, desc="Scanning", unit=" anime", dynamic_ncols=True)
 
     for i, anime_id in enumerate(progress, start=1):
 
@@ -883,7 +893,7 @@ def main():
 
             related_id = relation["id"]
 
-            if related_id in watched_ids:
+            if related_id in existing_ids:
                 continue
 
             anime_type = TYPE_NORMALIZATION.get(relation["type"], relation["type"])
@@ -932,7 +942,7 @@ def main():
 
     print()
     print("=" * 50)
-    print(f"Scanned: {len(watched_ids)}")
+    print(f"Scanned: {len(source_ids)}")
     print(f"Missing: {len(missing)}")
     print("Report saved as:")
     print("missing_related_anime.html")

@@ -16,12 +16,16 @@ Features:
 
 - Local HTML caching for fast repeated runs
 - Episode count extraction
+- Score extraction
 - English title extraction
 - Release year extraction
-- PTW highlighting
+- Plan-To-Watch highlighting
+- Unreleased anime detection
 - Interactive HTML report
 - Sortable columns
 - Type filtering
+- PTW filtering
+- Unreleased filtering
 - Direct MAL links
 
 Output:
@@ -72,12 +76,6 @@ SECONDARY_RELATIONS = {
 
 ALLOWED_RELATIONS = MAIN_RELATIONS | SECONDARY_RELATIONS
 
-UNKNOWN_EPISODE_VALUES = {
-    "unknown",
-    "?",
-    "n/a",
-}
-
 SESSION = requests.Session()
 
 SESSION.headers.update(HEADERS)
@@ -123,7 +121,7 @@ def extract_anime_id(url):
 
 
 # ============================================================
-# RELATION SCRAPER
+# ANIME SCRAPING
 # ============================================================
 
 
@@ -309,7 +307,7 @@ def get_anime_metadata(anime_id):
 
             score_text = score_elem.get_text(strip=True)
 
-            if score_text and score_text != "N/A" and score_text != "?":
+            if score_text not in {"", "N/A", "?"}:
                 score = score_text
 
         english = soup.find(class_="title-english")
@@ -557,6 +555,11 @@ function applyFilters() {{
         document.getElementById(
             "hidePTW"
         ).checked;
+        
+    const hideUpcoming =
+        document.getElementById(
+            "hideUpcoming"
+        ).checked;
 
     const selectedType =
         document.getElementById(
@@ -572,19 +575,27 @@ function applyFilters() {{
 
         const isPTW =
             row.dataset.ptw === "true";
+            
+        const isUpcoming =
+            row.dataset.upcoming === "true";
 
         const rowType =
             row.dataset.type;
 
         const ptwPass =
             !hidePTW || !isPTW;
+            
+        const upcomingPass =
+            !hideUpcoming || !isUpcoming;
 
         const typePass =
             selectedType === ""
             || rowType === selectedType;
 
         row.style.display =
-            ptwPass && typePass
+            ptwPass &&
+            upcomingPass &&
+            typePass
                 ? ""
                 : "none";
 
@@ -648,6 +659,10 @@ function sortTable(n) {{
     applyFilters();
 }}
 
+window.onload = function () {{
+    applyFilters();
+}};
+
 </script>
 
 </head>
@@ -663,7 +678,18 @@ function sortTable(n) {{
     type="checkbox"
     id="hidePTW"
     onchange="applyFilters()">
-Hide PTW Entries
+Hide Planned to Watch
+</label>
+
+&nbsp;&nbsp;&nbsp;
+
+<label>
+<input
+    type="checkbox"
+    id="hideUpcoming"
+    checked
+    onchange="applyFilters()">
+Hide Not Yet Released
 </label>
 
 &nbsp;&nbsp;&nbsp;
@@ -741,13 +767,21 @@ MAL
     for anime_id, data in sorted(
             missing.items(),
             key=lambda x: (
-                    not x[1]["planned"],
+                    (
+                            float(x[1].get("episodes", 0))
+                            if str(x[1].get("episodes", "?")).replace(".", "").isdigit()
+                            else 0
+                    ),
                     -(
                             float(x[1].get("score", 0))
                             if str(x[1].get("score", "?")).replace(".", "").isdigit()
                             else 0
                     ),
-                    x[1]["english_title"].lower(),
+                    -(
+                            float(x[1].get("year", 0))
+                            if str(x[1].get("year", "?")).replace(".", "").isdigit()
+                            else 0
+                    ),
             ),
     ):
         row_class = "ptw" if data["planned"] else "not-added"
@@ -755,7 +789,7 @@ MAL
         anime_type = data["type"].lower().replace(" ", "")
 
         episode_display = (
-            '<span class="upcoming-badge">Unknown</span>'
+            '<span class="upcoming-badge">Upcoming</span>'
             if data.get("upcoming")
             else data.get("episodes", "?")
         )
@@ -773,10 +807,12 @@ MAL
         )
 
         html += f"""
+
 <tr
 class="{row_class}"
 data-type="{data['type']}"
-data-ptw="{str(data['planned']).lower()}">
+data-ptw="{str(data['planned']).lower()}"
+data-upcoming="{str(data.get('upcoming', False)).lower()}">
 
 <td>
 
@@ -827,13 +863,12 @@ Open
 </html>
 """
 
-    with open("missing_related_anime.html", "w", encoding="utf-8") as f:
-        f.write(html)
+    report_path = Path("missing_related_anime.html")
 
-    report_path = Path("missing_related_anime.html").resolve()
+    report_path.write_text(html, encoding="utf-8")
 
     try:
-        webbrowser.open(report_path.as_uri())
+        webbrowser.open(report_path.resolve().as_uri())
     except Exception:
         pass
 
@@ -923,9 +958,7 @@ def main():
 
         data["episodes"] = meta["episodes"]
 
-        data["upcoming"] = (
-                str(meta["episodes"]).strip().lower() in UNKNOWN_EPISODE_VALUES
-        )
+        data["upcoming"] = str(meta["score"]).strip().lower() in {"?", "unknown", "n/a"}
 
         data["english_title"] = (
             meta["english_title"] if meta["english_title"] else data["title"]

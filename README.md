@@ -124,7 +124,7 @@ pip install requests beautifulsoup4 tqdm
 Run:
 
 ```bash
-python mal_watch_priority.py
+python mal_missing_titles.py
 ```
 
 Enter your MyAnimeList username:
@@ -137,8 +137,10 @@ Example:
 
 ```text
 Loaded 823 entries
-Scanning...
+Scanning: 100%|██████████|
+
 Loading metadata...
+Scanning: 100%|██████████|
 ```
 
 After completion:

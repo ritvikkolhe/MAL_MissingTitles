@@ -4,23 +4,24 @@ Find missing entries in your anime franchises by scanning your MyAnimeList and g
 
 ## Overview
 
-This tool analyzes the anime on your MyAnimeList and discovers related entries that are not currently watched while still preserving **Plan To Watch (PTW)** entries for visibility.
+This tool analyzes your MyAnimeList anime list and discovers franchise entries that are related to anime you are currently watching or have completed, but are not already present on your list.
 
 The goal is to answer questions like:
 
 - Did I miss a sequel?
 - Is there a side story I never added?
 - Am I missing an OVA, movie, or spin-off from a franchise?
-- Which franchise entries are already in my PTW list?
+- Which franchise entries are already in my Plan To Watch list?
+- Which unreleased franchise entries have already been announced?
 
-The script generates a sortable and filterable HTML report showing all missing related anime along with useful metadata such as:
+The script generates a sortable and filterable HTML report containing useful metadata such as:
 
 - English title
-- Type
+- Anime type
 - Episode count
 - Release year
 - MAL score
-- PTW status
+- Plan To Watch status
 - Direct MAL link
 
 ---
@@ -53,20 +54,41 @@ Includes:
 
 - Sortable columns
 - Type filtering
-- PTW highlighting
-- PTW hide/show toggle
+- Plan To Watch highlighting
+- Hide Plan To Watch toggle
+- Hide unreleased anime toggle
 - Direct MAL links
-- Score sorting
+- Score display
+- Release year display
 
-### Smart PTW Handling
+### Smart List Handling
 
-PTW entries are:
+The script scans only:
+
+- Watching
+- Completed
+
+The following statuses are excluded from scanning:
+
+- Plan To Watch
+- On Hold
+- Dropped
+
+Anime already present in any of these statuses are not recommended again.
+
+### Plan To Watch Support
+
+Plan To Watch entries are:
 
 - Included in the report
 - Visually highlighted
 - Not used as traversal roots
 
 This allows you to see existing PTW entries while preventing franchise expansion through anime you have not actually watched.
+
+### Unreleased Anime Detection
+
+Upcoming anime with incomplete MAL metadata are automatically identified and can be hidden from the report using the built-in filter.
 
 ### Local Caching
 
@@ -86,7 +108,7 @@ Benefits:
 
 ```bash
 git clone https://github.com/<username>/MAL_MissingTitles.git
-cd mal-missing-related-anime
+cd MAL_MissingTitles
 ```
 
 ### Install Dependencies
@@ -102,7 +124,7 @@ pip install requests beautifulsoup4 tqdm
 Run:
 
 ```bash
-python main.py
+python mal_watch_priority.py
 ```
 
 Enter your MyAnimeList username:
@@ -115,22 +137,22 @@ Example:
 
 ```text
 Loaded 823 entries
-Scanning: 100%|██████████|
-Loading episode counts...
+Scanning...
+Loading metadata...
 ```
 
 After completion:
 
 ```text
 ==================================================
-Scanned: 823
+Scanned: 623
 Missing: 147
 Report saved as:
 missing_related_anime.html
 ==================================================
 ```
 
-The report will automatically open in your browser.
+The report will automatically open in your default browser.
 
 ---
 
@@ -146,7 +168,7 @@ https://myanimelist.net/animelist/<username>/load.json
 
 ### Step 2
 
-For every non-PTW anime:
+For every anime marked as Watching or Completed:
 
 - Download MAL page
 - Extract related anime
@@ -154,9 +176,14 @@ For every non-PTW anime:
 
 ### Step 3
 
-Remove entries already watched.
+Exclude entries already present on your list:
 
-PTW entries remain visible.
+- Watching
+- Completed
+- On Hold
+- Dropped
+
+Plan To Watch entries remain visible and highlighted.
 
 ### Step 4
 
@@ -165,17 +192,17 @@ Gather metadata:
 - Episodes
 - Release year
 - English title
-- Score
+- MAL score
 
 ### Step 5
 
-Generate interactive HTML report.
+Generate an interactive HTML report.
 
 ---
 
 ## Caching
 
-All downloaded pages are stored inside:
+All downloaded anime pages are stored inside:
 
 ```text
 cache/
@@ -191,13 +218,13 @@ cache/
 └── ...
 ```
 
-Delete the folder anytime to force a full refresh.
+Delete the folder at any time to force a complete refresh.
 
 ---
 
 ## Relationship Rules
 
-Included:
+### Included
 
 ```text
 Prequel
@@ -208,7 +235,7 @@ Side Story
 Spin-Off
 ```
 
-Ignored:
+### Ignored
 
 ```text
 Adaptation
@@ -219,7 +246,23 @@ Alternative Setting
 Other
 ```
 
-This keeps recommendations focused and relevant.
+This keeps recommendations focused on actual franchise viewing order and related entries.
+
+---
+
+## Report Features
+
+The generated report supports:
+
+- Sortable columns
+- Type filtering
+- Hide Plan To Watch entries
+- Hide unreleased entries
+- Plan To Watch highlighting
+- Episode counts
+- Release years
+- MAL scores
+- Direct MAL links
 
 ---
 
@@ -231,14 +274,6 @@ Generated report:
 missing_related_anime.html
 ```
 
-Contains:
-
-- Sortable table
-- Type filtering
-- PTW highlighting
-- MAL score display
-- Unknown badges for unreleased entries
-
 ---
 
 ## Dependencies
@@ -246,6 +281,19 @@ Contains:
 - requests
 - beautifulsoup4
 - tqdm
+
+---
+
+## Limitations
+
+This project relies on publicly available MyAnimeList data and page structure.
+
+Results may be affected by:
+
+- Changes to MAL page layouts
+- Missing entries in MAL's `load.json` endpoint
+- Incomplete metadata on MAL
+- Hidden or unavailable anime entries
 
 ---
 

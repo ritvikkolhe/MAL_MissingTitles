@@ -97,13 +97,28 @@ TYPE_NORMALIZATION = {
 
 
 def get_user_list(username):
-    url = f"https://myanimelist.net/animelist/{username}/load.json"
+    all_entries = []
+    offset = 0
 
-    response = SESSION.get(url, timeout=30)
+    while True:
+        url = (
+            f"https://myanimelist.net/animelist/"
+            f"{username}/load.json?offset={offset}&status=7"
+        )
 
-    response.raise_for_status()
+        response = SESSION.get(url, timeout=30)
+        response.raise_for_status()
 
-    return response.json()
+        batch = response.json()
+
+        if not batch:
+            break
+
+        all_entries.extend(batch)
+
+        offset += len(batch)
+
+    return all_entries
 
 
 # ============================================================
